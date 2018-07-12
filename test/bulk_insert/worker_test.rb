@@ -414,6 +414,6 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
     pgsql_worker.adapter_name = 'PostgreSQL'
     pgsql_worker.add ["Yo", 15, false, nil, nil]
 
-    assert_equal pgsql_worker.compose_insert_query, "INSERT  INTO \"testings\" (\"greeting\",\"age\",\"happy\",\"created_at\",\"updated_at\",\"color\") VALUES ('Yo',15,0,NULL,NULL,'chartreuse') ON CONFLICT (id) DO UPDATE SET `greeting`='Yo', `age`=15, `happy`=0, `created_at`=NULL, `updated_at`=NULL, `color`='chartreuse'"
+    assert_equal pgsql_worker.compose_insert_query, "INSERT  INTO \"testings\" (\"greeting\",\"age\",\"happy\",\"created_at\",\"updated_at\",\"color\") VALUES ('Yo',15,0,NULL,NULL,'chartreuse') ON CONFLICT (id) DO UPDATE SET greeting='Yo', age=15, happy=0, created_at=NULL, updated_at=NULL, color='chartreuse'"
   end
 end

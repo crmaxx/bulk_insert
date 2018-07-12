@@ -162,7 +162,7 @@ module BulkInsert
                     else
                       @connection.quote(value, column)
                     end
-            update_values << "`#{column.name}`=#{value}"
+            update_values << "#{column.name}=#{value}"
           end
         end
         " ON CONFLICT (#{@conflict_target}) DO UPDATE SET #{update_values.join(', ')}"
