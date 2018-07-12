@@ -14,7 +14,7 @@ module BulkInsert
       @adapter_name = connection.adapter_name
       # INSERT IGNORE only fails inserts with duplicate keys or unallowed nulls not the whole set of inserts
       @ignore = ignore
-      @update_duplicates = update_duplicates
+      @update_duplicates, @conflict_target = parse(update_duplicates)
       @return_primary_keys = return_primary_keys
 
       columns = connection.columns(table_name)
@@ -150,7 +150,23 @@ module BulkInsert
     end
 
     def on_conflict_statement
-      if (adapter_name =~ /\APost(?:greSQL|GIS)/i && ignore )
+      if adapter_name =~ /\APost(?:greSQL|GIS)/i && update_duplicates
+        update_values = []
+        @set.each do |row|
+          @columns.zip(row) do |column, value|
+            value = @now if value == :__timestamp_placeholder
+
+            value = if ActiveRecord::VERSION::STRING >= "5.0.0"
+                      value = @connection.type_cast_from_column(column, value) if column
+                      @connection.quote(value)
+                    else
+                      @connection.quote(value, column)
+                    end
+            update_values << "`#{column.name}`=#{value}"
+          end
+        end
+        " ON CONFLICT (#{@conflict_target}) DO UPDATE SET #{update_values.join(', ')}"
+      elsif adapter_name =~ /\APost(?:greSQL|GIS)/i && ignore
         ' ON CONFLICT DO NOTHING'
       elsif adapter_name =~ /^mysql/i && update_duplicates
         update_values = @columns.map do |column|
@@ -159,6 +175,17 @@ module BulkInsert
         ' ON DUPLICATE KEY UPDATE ' + update_values
       else
         ''
+      end
+    end
+
+    private
+
+    def parse(params)
+      case params.class
+      when Hash
+        [true, params[:conflict_target].join(', ')]
+      else
+        [params, 'id']
       end
     end
   end

@@ -401,4 +401,19 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
 
     assert_equal mysql_worker.compose_insert_query, "INSERT  INTO \"testings\" (\"greeting\",\"age\",\"happy\",\"created_at\",\"updated_at\",\"color\") VALUES ('Yo',15,0,NULL,NULL,'chartreuse') ON DUPLICATE KEY UPDATE `greeting`=VALUES(`greeting`), `age`=VALUES(`age`), `happy`=VALUES(`happy`), `created_at`=VALUES(`created_at`), `updated_at`=VALUES(`updated_at`), `color`=VALUES(`color`)"
   end
+
+  test "postgresql adapter can update duplicates" do
+    pgsql_worker = BulkInsert::Worker.new(
+      Testing.connection,
+      Testing.table_name,
+      'id',
+      %w(greeting age happy created_at updated_at color),
+      500, # batch size
+      false, # ignore
+      conflict_target: %w(id)) # update_duplicates
+    pgsql_worker.adapter_name = 'PostgreSQL'
+    pgsql_worker.add ["Yo", 15, false, nil, nil]
+
+    assert_equal pgsql_worker.compose_insert_query, "INSERT  INTO \"testings\" (\"greeting\",\"age\",\"happy\",\"created_at\",\"updated_at\",\"color\") VALUES ('Yo',15,0,NULL,NULL,'chartreuse') ON CONFLICT (id) DO UPDATE SET `greeting`='Yo', `age`=15, `happy`=0, `created_at`=NULL, `updated_at`=NULL, `color`='chartreuse'"
+  end
 end
