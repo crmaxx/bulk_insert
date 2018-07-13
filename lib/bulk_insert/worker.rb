@@ -5,16 +5,16 @@ module BulkInsert
     attr_accessor :before_save_callback
     attr_accessor :after_save_callback
     attr_accessor :adapter_name
-    attr_reader :ignore, :update_duplicates, :result_sets
+    attr_reader :ignore, :update_duplicates, :conflict_target, :result_sets
 
-    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_duplicates=false, return_primary_keys=false)
+    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_params=false, return_primary_keys=false)
       @connection = connection
       @set_size = set_size
 
       @adapter_name = connection.adapter_name
       # INSERT IGNORE only fails inserts with duplicate keys or unallowed nulls not the whole set of inserts
       @ignore = ignore
-      @update_duplicates, @conflict_target = parse(update_duplicates)
+      @update_duplicates, @conflict_target = parse_params(update_params)
       @return_primary_keys = return_primary_keys
 
       columns = connection.columns(table_name)
@@ -165,7 +165,7 @@ module BulkInsert
             update_values << "#{column.name}=#{value}"
           end
         end
-        " ON CONFLICT (#{@conflict_target}) DO UPDATE SET #{update_values.join(', ')}"
+        " ON CONFLICT (#{conflict_target}) DO UPDATE SET #{update_values.join(', ')}"
       elsif adapter_name =~ /\APost(?:greSQL|GIS)/i && ignore
         ' ON CONFLICT DO NOTHING'
       elsif adapter_name =~ /^mysql/i && update_duplicates
@@ -180,10 +180,9 @@ module BulkInsert
 
     private
 
-    def parse(params)
-      case params.class
-      when Hash
-        [true, params[:conflict_target].join(', ')]
+    def parse_params(params)
+      if params.is_a?(Hash)
+         [true, params[:conflict_target].join(', ')]
       else
         [params, 'id']
       end
