@@ -140,6 +140,7 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
       500,
       false,
       false,
+      [],
       true
     )
 
@@ -334,6 +335,7 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
       500, # batch size
       true, # ignore
       false, # update duplicates
+      [], # conflict_target
       true # return primary keys
     )
     pgsql_worker.adapter_name = 'PostgreSQL'
@@ -351,6 +353,7 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
       500, # batch size
       true, # ignore
       false, # update duplicates
+      [], # conflict_target
       true # return primary keys
     )
     pgsql_worker.adapter_name = 'PostGIS'
@@ -410,7 +413,8 @@ class BulkInsertWorkerTest < ActiveSupport::TestCase
       %w(greeting age happy created_at updated_at color),
       500, # batch size
       false, # ignore
-      conflict_target: %w(id)) # update_duplicates
+      true, # update_duplicates
+      %w(id)) # conflict_target
     pgsql_worker.adapter_name = 'PostgreSQL'
     pgsql_worker.add ["Yo", 15, false, nil, nil]
 

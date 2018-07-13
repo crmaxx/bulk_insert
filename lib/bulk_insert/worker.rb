@@ -7,14 +7,15 @@ module BulkInsert
     attr_accessor :adapter_name
     attr_reader :ignore, :update_duplicates, :conflict_target, :result_sets
 
-    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_params=false, return_primary_keys=false)
+    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_duplicates=false, conflict_target=[], return_primary_keys=false)
       @connection = connection
       @set_size = set_size
 
       @adapter_name = connection.adapter_name
       # INSERT IGNORE only fails inserts with duplicate keys or unallowed nulls not the whole set of inserts
       @ignore = ignore
-      @update_duplicates, @conflict_target = parse_params(update_params)
+      @update_duplicates = update_duplicates
+      @conflict_target = conflict_target.join(', ')
       @return_primary_keys = return_primary_keys
 
       columns = connection.columns(table_name)
@@ -175,16 +176,6 @@ module BulkInsert
         ' ON DUPLICATE KEY UPDATE ' + update_values
       else
         ''
-      end
-    end
-
-    private
-
-    def parse_params(params)
-      if params.is_a?(Hash)
-         [true, params[:conflict_target].join(', ')]
-      else
-        [params, 'id']
       end
     end
   end
